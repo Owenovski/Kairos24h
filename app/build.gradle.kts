@@ -51,19 +51,23 @@ android {
 
 dependencies {
     // Dependencias principales de Compose UI
-    implementation("androidx.compose.ui:ui:1.5.1")
-    implementation("androidx.compose.ui:ui-tooling-preview:1.5.1")
-    implementation("androidx.compose.ui:ui-graphics:1.5.1")
+    implementation("androidx.compose.ui:ui:1.5.1")  // Esta es la versión más reciente de Compose UI
+    implementation("androidx.compose.ui:ui-tooling-preview:1.5.1")  // Herramientas de previsualización
+    implementation("androidx.compose.ui:ui-graphics:1.5.1")  // Para gráficos y renderizado de UI
 
-    // Dependencias existentes
-    implementation(libs.androidx.core.ktx)
-    implementation(libs.androidx.lifecycle.runtime.ktx)
-    implementation(libs.androidx.activity.compose)
-    implementation(platform(libs.androidx.compose.bom))
+    // Dependencias de Material3 (ya estás usando la versión más reciente de material3)
     implementation(libs.androidx.material3)
 
+    // Dependencias básicas y ciclo de vida
+    implementation(libs.androidx.core.ktx)  // Utilidades de AndroidX
+    implementation(libs.androidx.lifecycle.runtime.ktx)  // Para manejar ciclo de vida con Kotlin
+    implementation(libs.androidx.activity.compose)  // Para trabajar con actividades y Compose
+
+    // Dependencia para la versión BOM de Compose (esto asegura versiones consistentes)
+    implementation(platform(libs.androidx.compose.bom))  // BOM para Compose (mantiene consistencia en las versiones)
+
     // Dependencias de pruebas y depuración
-    debugImplementation("androidx.compose.ui:ui-tooling:1.5.1")
-    debugImplementation(libs.androidx.ui.test.manifest)
-    androidTestImplementation(libs.androidx.ui.test.junit4)
+    debugImplementation("androidx.compose.ui:ui-tooling:1.5.1")  // Herramientas para depuración y previsualización en tiempo real
+    debugImplementation(libs.androidx.ui.test.manifest)  // Manifesto de pruebas UI para depuración
+    androidTestImplementation(libs.androidx.ui.test.junit4)  // Dependencias para pruebas en Android UI
 }
