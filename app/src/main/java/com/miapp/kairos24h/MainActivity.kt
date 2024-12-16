@@ -13,9 +13,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
@@ -26,10 +24,13 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp  // Asegúrate de importar 'sp'
-import androidx.compose.ui.platform.LocalConfiguration // Para detectar la orientación
-import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.ui.unit.sp
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.text.input.ImeAction
+import androidx.navigation.NavController
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
 import com.example.kairos24h.ui.theme.Kairos24hTheme
 
 class MainActivity : ComponentActivity() {
@@ -37,38 +38,50 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         setContent {
             Kairos24hTheme {
-                DisplayLogo(
-                    onSubmit = { usuario, password ->
-                        if (usuario.isNotEmpty() && password.isNotEmpty()) {
-                            Toast.makeText(
-                                this,
-                                "Usuario: $usuario\nContraseña: $password",
-                                Toast.LENGTH_LONG
-                            ).show()
-                        } else {
-                            Toast.makeText(
-                                this,
-                                "Por favor, completa ambos campos",
-                                Toast.LENGTH_SHORT
-                            ).show()
-                        }
-                    },
-                    onForgotPassword = {
-                        val url =
-                            "https://www.controlhorario.kairos24h.es/index.php?r=site/solicitudRestablecerClave"
-                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
-                        startActivity(intent)
+                val navController = rememberNavController()
+
+                // Usamos NavHost para navegar entre pantallas
+                NavHost(navController = navController, startDestination = "login") {
+                    composable("login") {
+                        // Pantalla de Login
+                        DisplayLogo(
+                            onSubmit = { usuario, password ->
+                                if (usuario.isNotEmpty() && password.isNotEmpty()) {
+                                    // Si el usuario se valida correctamente
+                                    navController.navigate("fichar/$usuario") // Navegar a la página de fichaje
+                                } else {
+                                    Toast.makeText(
+                                        this@MainActivity,
+                                        "Por favor, completa ambos campos",
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                                }
+                            },
+                            onForgotPassword = {
+                                val url =
+                                    "https://www.controlhorario.kairos24h.es/index.php?r=site/solicitudRestablecerClave"
+                                val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
+                                startActivity(intent)
+                            },
+                            navController = navController // Pasamos el navController como parámetro
+                        )
                     }
-                )
+                    composable("fichar/{usuario}") { backStackEntry ->
+                        // Página de Bienvenida después de iniciar sesión
+                        val usuario = backStackEntry.arguments?.getString("usuario") ?: ""
+                        WelcomePage(usuario = usuario)
+                    }
+                }
             }
         }
     }
 }
-//prueba
+
 @Composable
 fun DisplayLogo(
     onSubmit: (String, String) -> Unit,
-    onForgotPassword: () -> Unit
+    onForgotPassword: () -> Unit,
+    navController: NavController // Aquí añadimos navController como parámetro
 ) {
     val usuario = remember { mutableStateOf("") }
     val password = remember { mutableStateOf("") }
@@ -186,6 +199,6 @@ fun DisplayLogo(
 @Composable
 fun DefaultPreview() {
     Kairos24hTheme {
-        DisplayLogo(onSubmit = { _, _ -> }, onForgotPassword = {})
+        DisplayLogo(onSubmit = { _, _ -> }, onForgotPassword = {}, navController = rememberNavController())
     }
 }

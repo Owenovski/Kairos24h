@@ -55,8 +55,14 @@ dependencies {
     implementation("androidx.compose.ui:ui-tooling-preview:1.5.1")  // Herramientas de previsualización
     implementation("androidx.compose.ui:ui-graphics:1.5.1")  // Para gráficos y renderizado de UI
 
+    // Navegación Compose
+    implementation("androidx.navigation:navigation-compose:2.5.3")
+
     // Dependencias de Material3 (ya estás usando la versión más reciente de material3)
     implementation(libs.androidx.material3)
+
+    // Dependencia explícita para Foundation
+    implementation("androidx.compose.foundation:foundation:1.5.1")
 
     // Dependencias básicas y ciclo de vida
     implementation(libs.androidx.core.ktx)  // Utilidades de AndroidX
@@ -71,3 +77,4 @@ dependencies {
     debugImplementation(libs.androidx.ui.test.manifest)  // Manifesto de pruebas UI para depuración
     androidTestImplementation(libs.androidx.ui.test.junit4)  // Dependencias para pruebas en Android UI
 }
+
