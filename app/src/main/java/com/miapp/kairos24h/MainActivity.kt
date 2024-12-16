@@ -1,7 +1,5 @@
 package com.miapp.kairos24h
 
-import android.content.Intent
-import android.net.Uri
 import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.ComponentActivity
@@ -27,11 +25,17 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.text.input.ImeAction
+import androidx.lifecycle.lifecycleScope
 import androidx.navigation.NavController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.example.kairos24h.ui.theme.Kairos24hTheme
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import java.net.HttpURLConnection
+import java.net.URL
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -40,15 +44,23 @@ class MainActivity : ComponentActivity() {
             Kairos24hTheme {
                 val navController = rememberNavController()
 
-                // Usamos NavHost para navegar entre pantallas
                 NavHost(navController = navController, startDestination = "login") {
                     composable("login") {
-                        // Pantalla de Login
                         DisplayLogo(
                             onSubmit = { usuario, password ->
                                 if (usuario.isNotEmpty() && password.isNotEmpty()) {
-                                    // Si el usuario se valida correctamente
-                                    navController.navigate("fichar/$usuario") // Navegar a la página de fichaje
+                                    lifecycleScope.launch {
+                                        val success = verifyLogin(usuario, password)
+                                        if (success) {
+                                            navController.navigate("fichar/$usuario")
+                                        } else {
+                                            Toast.makeText(
+                                                this@MainActivity,
+                                                "Usuario o contraseña incorrectos",
+                                                Toast.LENGTH_SHORT
+                                            ).show()
+                                        }
+                                    }
                                 } else {
                                     Toast.makeText(
                                         this@MainActivity,
@@ -60,18 +72,39 @@ class MainActivity : ComponentActivity() {
                             onForgotPassword = {
                                 val url =
                                     "https://www.controlhorario.kairos24h.es/index.php?r=site/solicitudRestablecerClave"
-                                val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
-                                startActivity(intent)
+                                startActivity(android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(url)))
                             },
-                            navController = navController // Pasamos el navController como parámetro
+                            navController = navController
                         )
                     }
                     composable("fichar/{usuario}") { backStackEntry ->
-                        // Página de Bienvenida después de iniciar sesión
                         val usuario = backStackEntry.arguments?.getString("usuario") ?: ""
                         WelcomePage(usuario = usuario)
                     }
                 }
+            }
+        }
+    }
+
+    private suspend fun verifyLogin(usuario: String, password: String): Boolean {
+        return withContext(Dispatchers.IO) {
+            try {
+                val url = URL("http://192.168.1.43/danubio-app/php/login.php?usuario=$usuario&password=$password")
+                val connection = url.openConnection() as HttpURLConnection
+                connection.requestMethod = "GET"
+
+                val responseCode = connection.responseCode
+                if (responseCode == HttpURLConnection.HTTP_OK) {
+                    val response = connection.inputStream.bufferedReader().use { it.readText() }
+                    connection.disconnect()
+                    return@withContext response.contains("\"success\":true")
+                } else {
+                    connection.disconnect()
+                    return@withContext false
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+                return@withContext false
             }
         }
     }
@@ -81,12 +114,11 @@ class MainActivity : ComponentActivity() {
 fun DisplayLogo(
     onSubmit: (String, String) -> Unit,
     onForgotPassword: () -> Unit,
-    navController: NavController // Aquí añadimos navController como parámetro
+    navController: NavController
 ) {
     val usuario = remember { mutableStateOf("") }
     val password = remember { mutableStateOf("") }
 
-    // Obtener configuración actual para detectar orientación
     val configuration = LocalConfiguration.current
     val isPortrait = configuration.orientation == android.content.res.Configuration.ORIENTATION_PORTRAIT
 
@@ -100,32 +132,30 @@ fun DisplayLogo(
         Box(
             modifier = Modifier
                 .shadow(10.dp, shape = RoundedCornerShape(4.dp), ambientColor = Color.Black, spotColor = Color.Black)
-                .padding(24.dp) // Reducción del padding
+                .padding(24.dp)
         ) {
             Column(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Top
             ) {
-                // Ajustar el tamaño de la imagen
                 Image(
                     painter = painterResource(id = R.drawable.logo),
                     contentDescription = "logo",
                     modifier = Modifier
-                        .width(200.dp)  // Reducido tamaño de la imagen
-                        .height(60.dp)  // Reducido tamaño de la imagen
+                        .width(200.dp)
+                        .height(60.dp)
                 )
 
-                Spacer(modifier = Modifier.height(8.dp)) // Reducir el espacio
+                Spacer(modifier = Modifier.height(8.dp))
 
-                // Usuario Input
                 OutlinedTextField(
                     value = usuario.value,
                     onValueChange = { usuario.value = it },
                     label = { Text("Usuario") },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 8.dp), // Reducido padding
+                        .padding(horizontal = 8.dp),
                     textStyle = TextStyle(color = Color.Black),
                     keyboardOptions = KeyboardOptions.Default.copy(
                         imeAction = ImeAction.Next
@@ -133,9 +163,8 @@ fun DisplayLogo(
                     keyboardActions = KeyboardActions.Default
                 )
 
-                Spacer(modifier = Modifier.height(8.dp)) // Reducir espacio
+                Spacer(modifier = Modifier.height(8.dp))
 
-                // Contraseña Input
                 OutlinedTextField(
                     value = password.value,
                     onValueChange = { password.value = it },
@@ -143,7 +172,7 @@ fun DisplayLogo(
                     visualTransformation = PasswordVisualTransformation(),
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 8.dp), // Reducido padding
+                        .padding(horizontal = 8.dp),
                     textStyle = TextStyle(color = Color.Black),
                     keyboardOptions = KeyboardOptions.Default.copy(
                         imeAction = ImeAction.Done
@@ -151,23 +180,21 @@ fun DisplayLogo(
                     keyboardActions = KeyboardActions.Default
                 )
 
-                Spacer(modifier = Modifier.height(16.dp)) // Espacio más pequeño
+                Spacer(modifier = Modifier.height(16.dp))
 
-                // Botón de Acceso
                 Button(
                     onClick = { onSubmit(usuario.value, password.value) },
                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF7599B6)),
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 8.dp) // Reducido padding
-                        .height(45.dp) // Reducir altura del botón
+                        .padding(horizontal = 8.dp)
+                        .height(45.dp)
                 ) {
                     Text("Acceso", color = Color.White)
                 }
 
-                Spacer(modifier = Modifier.height(8.dp)) // Reducir espacio
+                Spacer(modifier = Modifier.height(8.dp))
 
-                // Enlace de Olvido de Contraseña
                 Text(
                     text = "¿Olvidaste la contraseña?",
                     color = Color(0xFF7599B6),
@@ -179,19 +206,31 @@ fun DisplayLogo(
                         .clickable { onForgotPassword() }
                 )
 
-                Spacer(modifier = Modifier.height(8.dp)) // Reducir espacio
+                Spacer(modifier = Modifier.height(8.dp))
 
-                // Texto adicional más compacto
                 Text(
                     text = "Para control de calidad y aumentar la seguridad de nuestro sistema, todos los accesos, acciones, consultas o cambios (Trazabilidad) que realice dentro de Kairos24h serán almacenados.\nLes recordamos que la Empresa podrá auditar los medios técnicos que pone a disposición del Trabajador para el desempeño de sus funciones.",
                     color = Color(0xFF447094),
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 8.dp),
-                    style = TextStyle(fontSize = 10.sp)  // Reducir tamaño de fuente
+                    style = TextStyle(fontSize = 10.sp)
                 )
             }
         }
+    }
+}
+
+@Composable
+fun WelcomePage(usuario: String) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        Text(text = "¡Bienvenido, $usuario!", style = TextStyle(fontSize = 20.sp))
     }
 }
 
