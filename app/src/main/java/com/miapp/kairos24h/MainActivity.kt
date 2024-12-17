@@ -1,9 +1,12 @@
 package com.miapp.kairos24h
 
+import android.Manifest
+import android.content.pm.PackageManager
 import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -16,15 +19,16 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.platform.LocalConfiguration
-import androidx.compose.ui.text.input.ImeAction
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.NavController
 import androidx.navigation.compose.NavHost
@@ -38,35 +42,43 @@ import java.net.HttpURLConnection
 import java.net.URL
 
 class MainActivity : ComponentActivity() {
+    // Gestor de permisos
+    private val requestLocationPermissionLauncher =
+        registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted ->
+            if (isGranted) {
+                Toast.makeText(this, "Permiso de ubicación concedido", Toast.LENGTH_SHORT).show()
+            } else {
+                Toast.makeText(this, "Permiso de ubicación denegado. Es necesario para continuar", Toast.LENGTH_SHORT).show()
+                solicitarPermisoUbicacion() // Volver a pedir permiso si se rechaza
+            }
+        }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
         setContent {
             Kairos24hTheme {
                 val navController = rememberNavController()
+
+                LaunchedEffect(Unit) {
+                    solicitarPermisoUbicacion() // Solicitar permisos al iniciar
+                }
 
                 NavHost(navController = navController, startDestination = "login") {
                     composable("login") {
                         DisplayLogo(
                             onSubmit = { usuario, password ->
-                                if (usuario.isNotEmpty() && password.isNotEmpty()) {
-                                    lifecycleScope.launch {
-                                        val success = verifyLogin(usuario, password)
-                                        if (success) {
-                                            navController.navigate("fichar/$usuario")
-                                        } else {
-                                            Toast.makeText(
-                                                this@MainActivity,
-                                                "Usuario o contraseña incorrectos",
-                                                Toast.LENGTH_SHORT
-                                            ).show()
-                                        }
+                                lifecycleScope.launch {
+                                    val isValid = verifyLogin(usuario, password)
+                                    if (isValid) {
+                                        navController.navigate("fichar/$usuario")
+                                    } else {
+                                        Toast.makeText(
+                                            this@MainActivity,
+                                            "Credenciales incorrectas",
+                                            Toast.LENGTH_SHORT
+                                        ).show()
                                     }
-                                } else {
-                                    Toast.makeText(
-                                        this@MainActivity,
-                                        "Por favor, completa ambos campos",
-                                        Toast.LENGTH_SHORT
-                                    ).show()
                                 }
                             },
                             onForgotPassword = {
@@ -86,6 +98,22 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    // Función para solicitar permisos de ubicación
+    private fun solicitarPermisoUbicacion() {
+        when {
+            ContextCompat.checkSelfPermission(
+                this,
+                Manifest.permission.ACCESS_FINE_LOCATION
+            ) == PackageManager.PERMISSION_GRANTED -> {
+                Toast.makeText(this, "Permiso de ubicación ya concedido", Toast.LENGTH_SHORT).show()
+            }
+            else -> {
+                requestLocationPermissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
+            }
+        }
+    }
+
+    // Función suspend para verificar el login
     private suspend fun verifyLogin(usuario: String, password: String): Boolean {
         return withContext(Dispatchers.IO) {
             try {
@@ -108,7 +136,6 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
-
 }
 
 @Composable
@@ -132,17 +159,16 @@ fun DisplayLogo(
     ) {
         Box(
             modifier = Modifier
-                .shadow(10.dp, shape = RoundedCornerShape(4.dp), ambientColor = Color.Black, spotColor = Color.Black)
+                .shadow(10.dp, shape = RoundedCornerShape(4.dp))
                 .padding(24.dp)
         ) {
             Column(
-                modifier = Modifier.fillMaxWidth(),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Top
             ) {
                 Image(
                     painter = painterResource(id = R.drawable.logo),
-                    contentDescription = "logo",
+                    contentDescription = "Logo",
                     modifier = Modifier
                         .width(200.dp)
                         .height(60.dp)
@@ -154,14 +180,7 @@ fun DisplayLogo(
                     value = usuario.value,
                     onValueChange = { usuario.value = it },
                     label = { Text("Usuario") },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 8.dp),
-                    textStyle = TextStyle(color = Color.Black),
-                    keyboardOptions = KeyboardOptions.Default.copy(
-                        imeAction = ImeAction.Next
-                    ),
-                    keyboardActions = KeyboardActions.Default
+                    keyboardOptions = KeyboardOptions.Default.copy(imeAction = ImeAction.Next)
                 )
 
                 Spacer(modifier = Modifier.height(8.dp))
@@ -171,14 +190,7 @@ fun DisplayLogo(
                     onValueChange = { password.value = it },
                     label = { Text("Contraseña") },
                     visualTransformation = PasswordVisualTransformation(),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 8.dp),
-                    textStyle = TextStyle(color = Color.Black),
-                    keyboardOptions = KeyboardOptions.Default.copy(
-                        imeAction = ImeAction.Done
-                    ),
-                    keyboardActions = KeyboardActions.Default
+                    keyboardOptions = KeyboardOptions.Default.copy(imeAction = ImeAction.Done)
                 )
 
                 Spacer(modifier = Modifier.height(16.dp))
@@ -186,10 +198,7 @@ fun DisplayLogo(
                 Button(
                     onClick = { onSubmit(usuario.value, password.value) },
                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF7599B6)),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 8.dp)
-                        .height(45.dp)
+                    modifier = Modifier.fillMaxWidth()
                 ) {
                     Text("Acceso", color = Color.White)
                 }
@@ -199,29 +208,14 @@ fun DisplayLogo(
                 Text(
                     text = "¿Olvidaste la contraseña?",
                     color = Color(0xFF7599B6),
-                    style = TextStyle(textDecoration = TextDecoration.Underline),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 8.dp)
-                        .align(Alignment.Start)
-                        .clickable { onForgotPassword() }
-                )
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                Text(
-                    text = "Para control de calidad y aumentar la seguridad de nuestro sistema, todos los accesos, acciones, consultas o cambios (Trazabilidad) que realice dentro de Kairos24h serán almacenados.\nLes recordamos que la Empresa podrá auditar los medios técnicos que pone a disposición del Trabajador para el desempeño de sus funciones.",
-                    color = Color(0xFF447094),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 8.dp),
-                    style = TextStyle(fontSize = 10.sp)
+                    textDecoration = TextDecoration.Underline,
+                    modifier = Modifier.clickable { onForgotPassword() }
                 )
             }
         }
     }
 }
-// Quecontento
+
 @Preview(showBackground = true)
 @Composable
 fun DefaultPreview() {
