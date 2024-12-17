@@ -222,19 +222,6 @@ fun DisplayLogo(
     }
 }
 
-@Composable
-fun WelcomePage(usuario: String) {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
-    ) {
-        Text(text = "¡Bienvenido, $usuario!", style = TextStyle(fontSize = 20.sp))
-    }
-}
-
 @Preview(showBackground = true)
 @Composable
 fun DefaultPreview() {
