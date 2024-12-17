@@ -221,7 +221,7 @@ fun DisplayLogo(
         }
     }
 }
-
+// Quecontento
 @Preview(showBackground = true)
 @Composable
 fun DefaultPreview() {
