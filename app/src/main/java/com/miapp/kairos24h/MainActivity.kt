@@ -89,7 +89,7 @@ class MainActivity : ComponentActivity() {
     private suspend fun verifyLogin(usuario: String, password: String): Boolean {
         return withContext(Dispatchers.IO) {
             try {
-                val url = URL("http://192.168.1.43/danubio-app/php/login.php?usuario=$usuario&password=$password")
+                val url = URL("http://192.168.25.134/registro/php/enlace.php?usuario=$usuario&pass=$password")
                 val connection = url.openConnection() as HttpURLConnection
                 connection.requestMethod = "GET"
 
@@ -108,6 +108,7 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
+
 }
 
 @Composable
