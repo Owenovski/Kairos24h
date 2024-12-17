@@ -61,6 +61,9 @@ dependencies {
     // Dependencias de Material3 (ya estás usando la versión más reciente de material3)
     implementation(libs.androidx.material3)
 
+    // Fused Location Provider (Google Play Services)
+    implementation ("com.google.android.gms:play-services-location:18.0.0")
+
     // Dependencia explícita para Foundation
     implementation("androidx.compose.foundation:foundation:1.5.1")
 
