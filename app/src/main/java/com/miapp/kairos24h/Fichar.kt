@@ -59,15 +59,31 @@ fun WelcomePage(usuario: String) {
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Texto de bienvenida
-            Text(
-                text = "¡Bienvenido $usuario!",
-                color = Color.Black,
-                style = TextStyle(fontSize = 18.sp, fontWeight = FontWeight.Bold),
-                modifier = Modifier.padding(8.dp)
-            )
+            Row(
+                verticalAlignment = Alignment.CenterVertically, // Alinea verticalmente al centro
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(8.dp)
+            ) {
+                // Imagen a la izquierda
+                Image(
+                    painter = painterResource(id = R.drawable.icono_usuario), // Reemplaza con tu recurso de imagen
+                    contentDescription = "Icono de usuario",
+                    modifier = Modifier
+                        .size(40.dp) // Ajusta el tamaño de la imagen
+                        .padding(end = 8.dp) // Espaciado a la derecha de la imagen
+                )
+
+                // Texto a la derecha
+                Text(
+                    text = "$usuario",
+                    color = Color.Black,
+                    style = TextStyle(fontSize = 18.sp, fontWeight = FontWeight.Bold),
+                )
+            }
 
             Spacer(modifier = Modifier.height(16.dp))
+
 
             // Fila para los botones de entrada y salida
             Row(
