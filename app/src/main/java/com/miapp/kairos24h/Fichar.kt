@@ -1,242 +1,71 @@
 package com.miapp.kairos24h
 
-import android.Manifest
-import android.content.Intent
-import android.content.pm.PackageManager
-import android.location.Location
 import android.os.Bundle
-import android.widget.Toast
-import androidx.activity.ComponentActivity
-import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.Image
+import android.webkit.WebResourceRequest
+import android.webkit.WebView
+import android.webkit.WebViewClient
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.clickable
-import androidx.compose.material3.Text
-import androidx.compose.runtime.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import androidx.navigation.NavController
 import androidx.compose.ui.platform.LocalContext
-import androidx.core.app.ActivityCompat
-import com.google.android.gms.location.FusedLocationProviderClient
-import com.google.android.gms.location.LocationServices
-import java.text.SimpleDateFormat
-import java.util.*
+import androidx.compose.ui.viewinterop.AndroidView
+import com.example.kairos24h.ui.theme.Kairos24hTheme
 
 @Composable
-fun WelcomePage(usuario: String) {
-    val context = LocalContext.current // Se obtiene el contexto aquí dentro del composable
-    val fusedLocationClient = remember { LocationServices.getFusedLocationProviderClient(context) }
-    val horaEntrada = remember { mutableStateOf("") }
-    val horaSalida = remember { mutableStateOf("") }
-    val location = remember { mutableStateOf<Location?>(null) }
+fun FicharScreen(usuario: String) {
+    val url = "https://controlhorario.kairos24h.es/"
 
-    // Función para obtener la hora actual con zona horaria correcta
-    fun obtenerHoraActual(): String {
-        val calendar = Calendar.getInstance(TimeZone.getDefault())
-        val formatoHora = SimpleDateFormat("HH:mm", Locale.getDefault())
-        formatoHora.timeZone = TimeZone.getDefault()
-        return formatoHora.format(calendar.time)
-    }
-
-    // Función para obtener la ubicación actual del dispositivo
-    fun obtenerUbicacion() {
-        // Verificar si el permiso de ubicación está concedido
-        if (ActivityCompat.checkSelfPermission(
-                context,
-                Manifest.permission.ACCESS_FINE_LOCATION
-            ) != PackageManager.PERMISSION_GRANTED
-        ) {
-            return
-        }
-
-        // Obtener la ubicación del dispositivo
-        fusedLocationClient.lastLocation.addOnSuccessListener { locationResult: Location? ->
-            location.value = locationResult
-        }
-    }
-
-    // Función para manejar clic en Entrada
-    fun onEntradaClick() {
-        horaEntrada.value = "Has fichado a las ${obtenerHoraActual()}"
-        obtenerUbicacion() // Obtener la ubicación cuando se hace clic en "Entrada"
-    }
-
-    // Función para manejar clic en Salida
-    fun onSalidaClick() {
-        horaSalida.value = "Has salido a las ${obtenerHoraActual()}"
-        obtenerUbicacion() // Obtener la ubicación cuando se hace clic en "Salida"
-    }
-
-    // Función para abrir la ubicación en Google Maps
-    fun abrirGoogleMaps(lat: Double, lon: Double) {
-        val gmmIntentUri = "geo:$lat,$lon?q=$lat,$lon"
-        val mapIntent = Intent(Intent.ACTION_VIEW, android.net.Uri.parse(gmmIntentUri))
-        mapIntent.setPackage("com.google.android.apps.maps")
-        context.startActivity(mapIntent)
-    }
-
-    LaunchedEffect(Unit) {
-        // Inicializa la ubicación solo si el usuario interactúa
-    }
-
-    Box(
+    // Pantalla principal de Fichar
+    Column(
         modifier = Modifier
             .fillMaxSize()
             .padding(16.dp),
-        contentAlignment = Alignment.Center
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .shadow(10.dp, shape = RoundedCornerShape(4.dp), ambientColor = Color.Black, spotColor = Color.Black)
-                .padding(24.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            // Logo
-            Image(
-                painter = painterResource(id = R.drawable.logo),
-                contentDescription = "logo",
-                modifier = Modifier
-                    .width(200.dp)
-                    .height(60.dp)
-            )
+        Text(
+            text = "Bienvenido $usuario",
+            style = MaterialTheme.typography.titleLarge
+        )
 
-            Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(16.dp))
 
-            Row(
-                verticalAlignment = Alignment.CenterVertically, // Alinea verticalmente al centro
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(8.dp)
-            ) {
-                // Imagen a la izquierda
-                Image(
-                    painter = painterResource(id = R.drawable.icono_usuario), // Reemplaza con tu recurso de imagen
-                    contentDescription = "Icono de usuario",
-                    modifier = Modifier
-                        .size(40.dp) // Ajusta el tamaño de la imagen
-                        .padding(end = 8.dp) // Espaciado a la derecha de la imagen
-                )
-
-                // Texto a la derecha
-                Text(
-                    text = "$usuario",
-                    color = Color.Black,
-                    style = TextStyle(fontSize = 18.sp, fontWeight = FontWeight.Bold),
-                )
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-
-            // Fila para los botones de entrada y salida
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceEvenly
-            ) {
-                // Imagen para Fichar Entrada
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    Image(
-                        painter = painterResource(id = R.drawable.entrada), // Cambia "entrada" por el ID correcto
-                        contentDescription = "Entrada",
-                        modifier = Modifier
-                            .size(80.dp) // Tamaño reducido para ajustarse a la fila
-                            .clickable { onEntradaClick() }
-                    )
-                    Text(
-                        text = "Entrada",
-                        color = Color(0xFF0A569A),
-                        style = TextStyle(fontSize = 14.sp, fontWeight = FontWeight.Normal),
-                        modifier = Modifier
-                            .padding(top = 8.dp)
-                            .offset(x = 4.dp)
-                    )
-                }
-
-                // Imagen para Fichar Salida
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    Image(
-                        painter = painterResource(id = R.drawable.salida), // Cambia "salida" por el ID correcto
-                        contentDescription = "Salida",
-                        modifier = Modifier
-                            .size(80.dp) // Tamaño reducido para ajustarse a la fila
-                            .clickable { onSalidaClick() }
-                    )
-                    Text(
-                        text = "Salida",
-                        color = Color(0xFF0A569A),
-                        style = TextStyle(fontSize = 14.sp, fontWeight = FontWeight.Normal),
-                        modifier = Modifier
-                            .padding(top = 8.dp)
-                            .offset(x = (-4).dp)
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // Mostrar mensaje cuando se haga clic en Entrada
-            if (horaEntrada.value.isNotEmpty()) {
-                Text(
-                    text = horaEntrada.value,
-                    color = Color.Green,
-                    modifier = Modifier.padding(8.dp),
-                    style = TextStyle(fontSize = 14.sp)
-                )
-
-                // Mostrar ubicación debajo del mensaje de Entrada
-                location.value?.let {
-                    Text(
-                        text = "Ubicación entrada: Lat: ${it.latitude}, Lon: ${it.longitude}",
-                        color = Color.Black,
-                        modifier = Modifier
-                            .padding(8.dp)
-                            .clickable { abrirGoogleMaps(it.latitude, it.longitude) } // Hacer clic en la ubicación para abrir Google Maps
-                    )
-                }
-            }
-
-            // Mostrar mensaje cuando se haga clic en Salida
-            if (horaSalida.value.isNotEmpty()) {
-                Text(
-                    text = horaSalida.value,
-                    color = Color.Red,
-                    modifier = Modifier.padding(8.dp),
-                    style = TextStyle(fontSize = 14.sp)
-                )
-
-                // Mostrar ubicación debajo del mensaje de Salida
-                location.value?.let {
-                    Text(
-                        text = "Ubicación salida: Lat: ${it.latitude}, Lon: ${it.longitude}",
-                        color = Color.Black,
-                        modifier = Modifier
-                            .padding(8.dp)
-                            .clickable { abrirGoogleMaps(it.latitude, it.longitude) } // Hacer clic en la ubicación para abrir Google Maps
-                    )
-                }
-            }
-        }
+        // WebView para mostrar el contenido de la URL
+        WebViewContainer(url = url)
     }
+}
+
+@Composable
+fun WebViewContainer(url: String) {
+    val context = LocalContext.current
+
+    AndroidView(
+        factory = {
+            WebView(context).apply {
+                settings.javaScriptEnabled = true
+                webViewClient = object : WebViewClient() {
+                    override fun shouldOverrideUrlLoading(view: WebView?, request: WebResourceRequest?): Boolean {
+                        return false // Permite que las URL se abran dentro del WebView
+                    }
+                }
+                loadUrl(url)
+            }
+        },
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(8.dp)
+    )
 }
 
 @Preview(showBackground = true)
 @Composable
-fun WelcomePagePreview() {
-    // Para fines de preview, no es necesario pasar el FusedLocationProviderClient
-    WelcomePage(usuario = "Juan Pérez")
+fun FicharPreview() {
+    Kairos24hTheme {
+        FicharScreen(usuario = "UsuarioEjemplo")
+    }
 }

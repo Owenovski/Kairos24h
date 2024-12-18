@@ -91,7 +91,7 @@ class MainActivity : ComponentActivity() {
                     }
                     composable("fichar/{usuario}") { backStackEntry ->
                         val usuario = backStackEntry.arguments?.getString("usuario") ?: ""
-                        WelcomePage(usuario = usuario)
+                        FicharScreen(usuario = usuario) // Navega a la pantalla de fichaje
                     }
                 }
             }
