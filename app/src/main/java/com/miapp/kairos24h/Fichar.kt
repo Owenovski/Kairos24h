@@ -9,11 +9,11 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.navigation.NavController
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import com.example.kairos24h.ui.theme.Kairos24hTheme
 
@@ -43,18 +43,26 @@ fun WebViewContainer(url: String, usuario: String, password: String, navControll
             WebView(context).apply {
                 settings.javaScriptEnabled = true
                 webViewClient = object : WebViewClient() {
-                    // Sobrescribir el método para interceptar las URLs cargadas
                     override fun shouldOverrideUrlLoading(view: WebView?, request: WebResourceRequest?): Boolean {
                         val url = request?.url.toString()
 
-                        // Verificar si la URL es la de "Salir"
                         if (url.contains("/index.php?r=site/logout")) {
+                            // Limpiar datos de navegación y cookies
+                            view?.apply {
+                                clearHistory()
+                                clearCache(true)
+                                clearFormData()
+                            }
+
+                            // Limpiar cookies globalmente
+                            android.webkit.CookieManager.getInstance().apply {
+                                removeAllCookies(null)
+                                flush()
+                            }
+
                             // Si se hace clic en "Salir", navega a MainActivity
-                            navController.popBackStack() // Si estás usando NavController
-                            // También puedes usar un Intent para volver a MainActivity
-                            // val intent = Intent(context, MainActivity::class.java)
-                            // context.startActivity(intent)
-                            return true  // No cargar la URL en el WebView
+                            navController.popBackStack()
+                            return true
                         }
 
                         return super.shouldOverrideUrlLoading(view, request)
@@ -63,17 +71,14 @@ fun WebViewContainer(url: String, usuario: String, password: String, navControll
                     override fun onPageFinished(view: WebView?, url: String?) {
                         super.onPageFinished(view, url)
 
-                        // Inyectar JavaScript después de que la página haya cargado completamente
                         val script = """
                             document.getElementById('LoginForm_username').value = '$usuario';
                             document.getElementById('LoginForm_password').value = '$password';
-                            // Simular el clic en el botón "Acceso"
                             var button = document.querySelector('input[type="submit"][value="Acceso"]');
                             if (button) {
                                 button.click();
                             }
                         """
-                        // Ejecutar el JavaScript
                         view?.evaluateJavascript(script, null)
                     }
                 }
@@ -90,6 +95,6 @@ fun WebViewContainer(url: String, usuario: String, password: String, navControll
 @Composable
 fun FicharPreview() {
     Kairos24hTheme {
-        FicharScreen(usuario = "UsuarioEjemplo", password = "ContraseñaEjemplo", navController = rememberNavController()) // Corregido aquí
+        FicharScreen(usuario = "UsuarioEjemplo", password = "ContraseñaEjemplo", navController = rememberNavController())
     }
 }

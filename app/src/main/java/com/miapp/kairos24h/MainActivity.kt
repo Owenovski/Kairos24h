@@ -34,11 +34,6 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.example.kairos24h.ui.theme.Kairos24hTheme
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
-import java.net.HttpURLConnection
-import java.net.URL
 
 class MainActivity : ComponentActivity() {
     // Gestor de permisos
@@ -67,18 +62,15 @@ class MainActivity : ComponentActivity() {
                     composable("login") {
                         DisplayLogo(
                             onSubmit = { usuario, password ->
-                                lifecycleScope.launch {
-                                    val isValid = verifyLogin(usuario, password)
-                                    if (isValid) {
-                                        // Navegar a la pantalla de fichaje pasando ambos parámetros
-                                        navController.navigate("fichar/$usuario/$password")
-                                    } else {
-                                        Toast.makeText(
-                                            this@MainActivity,
-                                            "Credenciales incorrectas",
-                                            Toast.LENGTH_SHORT
-                                        ).show()
-                                    }
+                                if (usuario.isNotEmpty() && password.isNotEmpty()) {
+                                    // Navegar a la pantalla de fichaje pasando ambos parámetros
+                                    navController.navigate("fichar/$usuario/$password")
+                                } else {
+                                    Toast.makeText(
+                                        this@MainActivity,
+                                        "Por favor, completa ambos campos",
+                                        Toast.LENGTH_SHORT
+                                    ).show()
                                 }
                             },
                             onForgotPassword = {
@@ -111,30 +103,6 @@ class MainActivity : ComponentActivity() {
             }
             else -> {
                 requestLocationPermissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
-            }
-        }
-    }
-
-    // Función suspend para verificar el login
-    private suspend fun verifyLogin(usuario: String, password: String): Boolean {
-        return withContext(Dispatchers.IO) {
-            try {
-                val url = URL("http://192.168.25.134/registro/php/enlace.php?usuario=$usuario&pass=$password")
-                val connection = url.openConnection() as HttpURLConnection
-                connection.requestMethod = "GET"
-
-                val responseCode = connection.responseCode
-                if (responseCode == HttpURLConnection.HTTP_OK) {
-                    val response = connection.inputStream.bufferedReader().use { it.readText() }
-                    connection.disconnect()
-                    return@withContext response.contains("\"success\":true")
-                } else {
-                    connection.disconnect()
-                    return@withContext false
-                }
-            } catch (e: Exception) {
-                e.printStackTrace()
-                return@withContext false
             }
         }
     }
