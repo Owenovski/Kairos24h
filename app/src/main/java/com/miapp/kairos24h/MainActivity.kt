@@ -21,7 +21,6 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextDecoration
@@ -71,7 +70,8 @@ class MainActivity : ComponentActivity() {
                                 lifecycleScope.launch {
                                     val isValid = verifyLogin(usuario, password)
                                     if (isValid) {
-                                        navController.navigate("fichar/$usuario")
+                                        // Navegar a la pantalla de fichaje pasando ambos parámetros
+                                        navController.navigate("fichar/$usuario/$password")
                                     } else {
                                         Toast.makeText(
                                             this@MainActivity,
@@ -89,9 +89,10 @@ class MainActivity : ComponentActivity() {
                             navController = navController
                         )
                     }
-                    composable("fichar/{usuario}") { backStackEntry ->
+                    composable("fichar/{usuario}/{password}") { backStackEntry ->
                         val usuario = backStackEntry.arguments?.getString("usuario") ?: ""
-                        FicharScreen(usuario = usuario) // Navega a la pantalla de fichaje
+                        val password = backStackEntry.arguments?.getString("password") ?: ""
+                        FicharScreen(usuario = usuario, password = password) // Navega a la pantalla de fichaje
                     }
                 }
             }
