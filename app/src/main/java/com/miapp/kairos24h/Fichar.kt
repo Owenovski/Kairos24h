@@ -44,11 +44,18 @@ fun WebViewContainer(url: String, usuario: String, password: String) {
                 webViewClient = object : WebViewClient() {
                     override fun onPageFinished(view: WebView?, url: String?) {
                         super.onPageFinished(view, url)
+
                         // Inyectar JavaScript después de que la página haya cargado completamente
                         val script = """
                             document.getElementById('LoginForm_username').value = '$usuario';
                             document.getElementById('LoginForm_password').value = '$password';
+                            // Simular el clic en el botón "Acceso"
+                            var button = document.querySelector('input[type="submit"][value="Acceso"]');
+                            if (button) {
+                                button.click();
+                            }
                         """
+                        // Ejecutar el JavaScript
                         view?.evaluateJavascript(script, null)
                     }
                 }
@@ -57,7 +64,7 @@ fun WebViewContainer(url: String, usuario: String, password: String) {
         },
         modifier = Modifier
             .fillMaxSize()
-            .padding(8.dp)  // Asegúrate de que 'dp' esté correctamente importado
+            .padding(8.dp)
     )
 }
 
