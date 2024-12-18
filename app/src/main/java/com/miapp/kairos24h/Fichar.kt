@@ -14,10 +14,11 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.navigation.compose.rememberNavController
 import com.example.kairos24h.ui.theme.Kairos24hTheme
 
 @Composable
-fun FicharScreen(usuario: String, password: String) {
+fun FicharScreen(usuario: String, password: String, navController: NavController) {
     val url = "https://controlhorario.kairos24h.es/"
 
     // Pantalla principal de Fichar
@@ -29,12 +30,12 @@ fun FicharScreen(usuario: String, password: String) {
         verticalArrangement = Arrangement.Center
     ) {
         // WebView para mostrar el contenido de la URL
-        WebViewContainer(url = url, usuario = usuario, password = password)
+        WebViewContainer(url = url, usuario = usuario, password = password, navController = navController)
     }
 }
 
 @Composable
-fun WebViewContainer(url: String, usuario: String, password: String) {
+fun WebViewContainer(url: String, usuario: String, password: String, navController: NavController) {
     val context = LocalContext.current
 
     AndroidView(
@@ -42,6 +43,23 @@ fun WebViewContainer(url: String, usuario: String, password: String) {
             WebView(context).apply {
                 settings.javaScriptEnabled = true
                 webViewClient = object : WebViewClient() {
+                    // Sobrescribir el método para interceptar las URLs cargadas
+                    override fun shouldOverrideUrlLoading(view: WebView?, request: WebResourceRequest?): Boolean {
+                        val url = request?.url.toString()
+
+                        // Verificar si la URL es la de "Salir"
+                        if (url.contains("/index.php?r=site/logout")) {
+                            // Si se hace clic en "Salir", navega a MainActivity
+                            navController.popBackStack() // Si estás usando NavController
+                            // También puedes usar un Intent para volver a MainActivity
+                            // val intent = Intent(context, MainActivity::class.java)
+                            // context.startActivity(intent)
+                            return true  // No cargar la URL en el WebView
+                        }
+
+                        return super.shouldOverrideUrlLoading(view, request)
+                    }
+
                     override fun onPageFinished(view: WebView?, url: String?) {
                         super.onPageFinished(view, url)
 
@@ -72,6 +90,6 @@ fun WebViewContainer(url: String, usuario: String, password: String) {
 @Composable
 fun FicharPreview() {
     Kairos24hTheme {
-        FicharScreen(usuario = "UsuarioEjemplo", password = "ContraseñaEjemplo")
+        FicharScreen(usuario = "UsuarioEjemplo", password = "ContraseñaEjemplo", navController = rememberNavController()) // Corregido aquí
     }
 }

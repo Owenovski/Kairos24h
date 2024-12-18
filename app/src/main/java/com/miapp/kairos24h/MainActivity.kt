@@ -92,7 +92,8 @@ class MainActivity : ComponentActivity() {
                     composable("fichar/{usuario}/{password}") { backStackEntry ->
                         val usuario = backStackEntry.arguments?.getString("usuario") ?: ""
                         val password = backStackEntry.arguments?.getString("password") ?: ""
-                        FicharScreen(usuario = usuario, password = password) // Navega a la pantalla de fichaje
+                        // Pasamos el navController a la pantalla de fichar
+                        FicharScreen(usuario = usuario, password = password, navController = navController)
                     }
                 }
             }
