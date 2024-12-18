@@ -28,12 +28,7 @@ fun FicharScreen(usuario: String) {
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        Text(
-            text = "Bienvenido $usuario",
-            style = MaterialTheme.typography.titleLarge
-        )
 
-        Spacer(modifier = Modifier.height(16.dp))
 
         // WebView para mostrar el contenido de la URL
         WebViewContainer(url = url)
