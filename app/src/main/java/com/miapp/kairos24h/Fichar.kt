@@ -20,6 +20,28 @@ import com.example.kairos24h.ui.theme.Kairos24hTheme
 @Composable
 fun FicharScreen(usuario: String, password: String, navController: NavController) {
     val url = "https://controlhorario.kairos24h.es/"
+    var showError by remember { mutableStateOf(false) }
+
+    // Mostrar alerta si el login falla
+    if (showError) {
+        AlertDialog(
+            onDismissRequest = {},
+            title = {
+                Text(text = "Error de Login")
+            },
+            text = {
+                Text(text = "Usuario o Password incorrectos")
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    // Volver al inicio de MainActivity
+                    navController.popBackStack()
+                }) {
+                    Text("Entendido")
+                }
+            }
+        )
+    }
 
     // Pantalla principal de Fichar
     Column(
@@ -30,13 +52,27 @@ fun FicharScreen(usuario: String, password: String, navController: NavController
         verticalArrangement = Arrangement.Center
     ) {
         // WebView para mostrar el contenido de la URL
-        WebViewContainer(url = url, usuario = usuario, password = password, navController = navController)
+        WebViewContainer(
+            url = url,
+            usuario = usuario,
+            password = password,
+            navController = navController,
+            onLoginError = { showError = true } // Manejar el error de login
+        )
     }
 }
 
 @Composable
-fun WebViewContainer(url: String, usuario: String, password: String, navController: NavController) {
+fun WebViewContainer(
+    url: String,
+    usuario: String,
+    password: String,
+    navController: NavController,
+    onLoginError: (Boolean) -> Unit
+) {
     val context = LocalContext.current
+    var errorMessage by remember { mutableStateOf("") }
+    var loginAttempted by remember { mutableStateOf(false) } // Control para evitar reintentos
 
     AndroidView(
         factory = {
@@ -71,15 +107,30 @@ fun WebViewContainer(url: String, usuario: String, password: String, navControll
                     override fun onPageFinished(view: WebView?, url: String?) {
                         super.onPageFinished(view, url)
 
-                        val script = """
-                            document.getElementById('LoginForm_username').value = '$usuario';
-                            document.getElementById('LoginForm_password').value = '$password';
-                            var button = document.querySelector('input[type="submit"][value="Acceso"]');
-                            if (button) {
-                                button.click();
+                        // Si no se ha intentado login previamente, ejecutar la automatización una sola vez
+                        if (!loginAttempted) {
+                            val script = """
+                                document.getElementById('LoginForm_username').value = '$usuario';
+                                document.getElementById('LoginForm_password').value = '$password';
+                                var button = document.querySelector('input[type="submit"][value="Acceso"]');
+                                if (button) {
+                                    button.click();
+                                }
+                            """
+                            view?.evaluateJavascript(script, null)
+                            loginAttempted = true // Marcar que ya se intentó el login
+                        }
+
+                        // Comprobar si el mensaje de error aparece
+                        view?.evaluateJavascript("""
+                            var errorMessage = document.querySelector('#LoginForm_password_em_');
+                            errorMessage ? 'error' : 'success';
+                        """) { result ->
+                            if (result.contains("error")) {
+                                errorMessage = "Usuario o password incorrectos"
+                                onLoginError(true) // Activar el error
                             }
-                        """
-                        view?.evaluateJavascript(script, null)
+                        }
                     }
                 }
                 loadUrl(url)
@@ -89,12 +140,18 @@ fun WebViewContainer(url: String, usuario: String, password: String, navControll
             .fillMaxSize()
             .padding(8.dp)
     )
+
+    // Cuando se detecte un error, notificamos al Composable principal
+    if (errorMessage.isNotEmpty()) {
+        onLoginError(true) // Activa el error para mostrar la alerta
+    }
 }
 
 @Preview(showBackground = true)
 @Composable
 fun FicharPreview() {
     Kairos24hTheme {
+        // Usamos un NavController ficticio para la vista previa
         FicharScreen(usuario = "UsuarioEjemplo", password = "ContraseñaEjemplo", navController = rememberNavController())
     }
 }
