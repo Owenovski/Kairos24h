@@ -9,6 +9,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -21,6 +22,7 @@ import com.example.kairos24h.ui.theme.Kairos24hTheme
 fun FicharScreen(usuario: String, password: String, navController: NavController) {
     val url = "https://controlhorario.kairos24h.es/"
     var showError by remember { mutableStateOf(false) }
+    var showButtons by remember { mutableStateOf(false) }
 
     // Mostrar alerta si el login falla
     if (showError) {
@@ -44,12 +46,10 @@ fun FicharScreen(usuario: String, password: String, navController: NavController
     }
 
     // Pantalla principal de Fichar
-    Column(
+    Box(
         modifier = Modifier
             .fillMaxSize()
-            .padding(16.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
+            .padding(16.dp)
     ) {
         // WebView para mostrar el contenido de la URL
         WebViewContainer(
@@ -57,8 +57,28 @@ fun FicharScreen(usuario: String, password: String, navController: NavController
             usuario = usuario,
             password = password,
             navController = navController,
-            onLoginError = { showError = true } // Manejar el error de login
+            onLoginError = { showError = true }, // Manejar el error de login
+            onUserDetected = { showButtons = it } // Detectar cuando el usuario está presente
         )
+
+        // Mostrar los botones solo cuando el usuario está detectado
+        if (showButtons) {
+            Row(
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)  // Alinea los botones en la parte inferior
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Button(onClick = { /* Acción de fichaje entrada */ }) {
+                    Text(text = "Fichaje Entrada")
+                }
+                Button(onClick = { /* Acción de fichaje salida */ }) {
+                    Text(text = "Fichaje Salida")
+                }
+            }
+        }
     }
 }
 
@@ -68,11 +88,12 @@ fun WebViewContainer(
     usuario: String,
     password: String,
     navController: NavController,
-    onLoginError: (Boolean) -> Unit
+    onLoginError: (Boolean) -> Unit,
+    onUserDetected: (Boolean) -> Unit
 ) {
     val context = LocalContext.current
     var loginAttempted by remember { mutableStateOf(false) } // Control para evitar reintentos
-    var isMonitoringError by remember { mutableStateOf(false) } // Control para evitar múltiples revisiones
+    var isMonitoringUser by remember { mutableStateOf(false) } // Control para evitar múltiples revisiones
 
     AndroidView(
         factory = {
@@ -121,10 +142,10 @@ fun WebViewContainer(
                             loginAttempted = true // Marcar que ya se intentó el login
                         }
 
-                        // Iniciar monitoreo periódico para detectar el mensaje de error
-                        if (!isMonitoringError) {
-                            isMonitoringError = true
-                            monitorError(view, onLoginError)
+                        // Iniciar monitoreo del DOM para detectar al usuario
+                        if (!isMonitoringUser) {
+                            isMonitoringUser = true
+                            monitorUser(view, onUserDetected)
                         }
                     }
                 }
@@ -138,21 +159,22 @@ fun WebViewContainer(
 }
 
 /**
- * Monitorea periódicamente el DOM para detectar el mensaje de error.
+ * Monitorea periódicamente el DOM para detectar al usuario.
  */
-fun monitorError(view: WebView?, onLoginError: (Boolean) -> Unit) {
+fun monitorUser(view: WebView?, onUserDetected: (Boolean) -> Unit) {
     view?.postDelayed({
         view.evaluateJavascript("""
             (function() {
-                var errorElement = document.querySelector('#LoginForm_password_em_');
-                return errorElement ? 'error' : 'success';
+                var userElement = document.querySelector('#dUsuarioHeader');
+                return userElement ? 'found' : 'not_found';
             })();
         """) { result ->
-            if (result.contains("error")) {
-                onLoginError(true) // Activar el error
+            if (result.contains("found")) {
+                onUserDetected(true) // Usuario detectado, mostrar botones
             } else {
-                // Si no se detectó el error, continuar monitoreando
-                monitorError(view, onLoginError)
+                onUserDetected(false) // Usuario no detectado, ocultar botones
+                // Continuar monitoreando si no se encuentra al usuario
+                monitorUser(view, onUserDetected)
             }
         }
     }, 1000) // Reintentar cada segundo
