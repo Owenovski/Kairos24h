@@ -71,8 +71,8 @@ fun WebViewContainer(
     onLoginError: (Boolean) -> Unit
 ) {
     val context = LocalContext.current
-    var errorMessage by remember { mutableStateOf("") }
     var loginAttempted by remember { mutableStateOf(false) } // Control para evitar reintentos
+    var isMonitoringError by remember { mutableStateOf(false) } // Control para evitar múltiples revisiones
 
     AndroidView(
         factory = {
@@ -121,15 +121,10 @@ fun WebViewContainer(
                             loginAttempted = true // Marcar que ya se intentó el login
                         }
 
-                        // Comprobar si el mensaje de error aparece
-                        view?.evaluateJavascript("""
-                            var errorMessage = document.querySelector('#LoginForm_password_em_');
-                            errorMessage ? 'error' : 'success';
-                        """) { result ->
-                            if (result.contains("error")) {
-                                errorMessage = "Usuario o password incorrectos"
-                                onLoginError(true) // Activar el error
-                            }
+                        // Iniciar monitoreo periódico para detectar el mensaje de error
+                        if (!isMonitoringError) {
+                            isMonitoringError = true
+                            monitorError(view, onLoginError)
                         }
                     }
                 }
@@ -140,11 +135,27 @@ fun WebViewContainer(
             .fillMaxSize()
             .padding(8.dp)
     )
+}
 
-    // Cuando se detecte un error, notificamos al Composable principal
-    if (errorMessage.isNotEmpty()) {
-        onLoginError(true) // Activa el error para mostrar la alerta
-    }
+/**
+ * Monitorea periódicamente el DOM para detectar el mensaje de error.
+ */
+fun monitorError(view: WebView?, onLoginError: (Boolean) -> Unit) {
+    view?.postDelayed({
+        view.evaluateJavascript("""
+            (function() {
+                var errorElement = document.querySelector('#LoginForm_password_em_');
+                return errorElement ? 'error' : 'success';
+            })();
+        """) { result ->
+            if (result.contains("error")) {
+                onLoginError(true) // Activar el error
+            } else {
+                // Si no se detectó el error, continuar monitoreando
+                monitorError(view, onLoginError)
+            }
+        }
+    }, 1000) // Reintentar cada segundo
 }
 
 @Preview(showBackground = true)
