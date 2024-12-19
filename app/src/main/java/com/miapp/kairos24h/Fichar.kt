@@ -63,19 +63,26 @@ fun FicharScreen(usuario: String, password: String, navController: NavController
 
         // Mostrar los botones solo cuando el usuario está detectado
         if (showButtons) {
-            Row(
+            Surface(
+                color = Color.Gray,
                 modifier = Modifier
                     .align(Alignment.BottomCenter)  // Alinea los botones en la parte inferior
                     .fillMaxWidth()
-                    .padding(16.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+                    .padding(16.dp)
             ) {
-                Button(onClick = { /* Acción de fichaje entrada */ }) {
-                    Text(text = "Fichaje Entrada")
-                }
-                Button(onClick = { /* Acción de fichaje salida */ }) {
-                    Text(text = "Fichaje Salida")
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Button(onClick = { /* Acción de fichaje entrada */ }) {
+                        Text(text = "Fichaje Entrada")
+                    }
+                    Button(onClick = { /* Acción de fichaje salida */ }) {
+                        Text(text = "Fichaje Salida")
+                    }
                 }
             }
         }
