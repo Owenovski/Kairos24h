@@ -183,8 +183,7 @@ fun WebViewContainer(
             }
         },
         modifier = Modifier
-            .fillMaxSize()
-            .padding(8.dp)
+            .fillMaxSize() // Eliminar padding para usar todo el espacio disponible
     )
 }
 
