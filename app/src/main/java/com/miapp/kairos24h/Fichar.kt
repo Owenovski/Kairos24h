@@ -17,6 +17,11 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import com.example.kairos24h.ui.theme.Kairos24hTheme
+import androidx.compose.foundation.Image
+import androidx.compose.ui.res.painterResource
+import androidx.compose.foundation.clickable
+
+
 
 @Composable
 fun FicharScreen(usuario: String, password: String, navController: NavController) {
@@ -49,7 +54,6 @@ fun FicharScreen(usuario: String, password: String, navController: NavController
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .padding(16.dp)
     ) {
         // WebView para mostrar el contenido de la URL
         WebViewContainer(
@@ -61,15 +65,16 @@ fun FicharScreen(usuario: String, password: String, navController: NavController
             onUserDetected = { showButtons = it } // Detectar cuando el usuario está presente
         )
 
-        // Mostrar los botones solo cuando el usuario está detectado
+        // Mostrar las imágenes solo cuando el usuario está detectado
         if (showButtons) {
             Surface(
-                color = Color.Gray,
+                color = Color(android.graphics.Color.parseColor("#e2e4e5")),
                 modifier = Modifier
-                    .align(Alignment.BottomCenter)  // Alinea los botones en la parte inferior
+                    .align(Alignment.BottomCenter)  // Alinea las imágenes en la parte inferior
                     .fillMaxWidth()
                     .padding(16.dp)
-            ) {
+            )
+            {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -77,12 +82,23 @@ fun FicharScreen(usuario: String, password: String, navController: NavController
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Button(onClick = { /* Acción de fichaje entrada */ }) {
-                        Text(text = "Fichaje Entrada")
-                    }
-                    Button(onClick = { /* Acción de fichaje salida */ }) {
-                        Text(text = "Fichaje Salida")
-                    }
+                    // Imagen para Fichaje Entrada
+                    Image(
+                        painter = painterResource(id = R.drawable.entrada), // Cambia "entrada" por el nombre de la imagen
+                        contentDescription = "entrada",
+                        modifier = Modifier
+                            .clickable { /* Acción de fichaje entrada */ }
+                            .size(100.dp) // Ajusta el tamaño de la imagen
+                    )
+
+                    // Imagen para Fichaje Salida
+                    Image(
+                        painter = painterResource(id = R.drawable.salida), // Cambia "salida" por el nombre de la imagen
+                        contentDescription = "salida",
+                        modifier = Modifier
+                            .clickable { /* Acción de fichaje salida */ }
+                            .size(100.dp) // Ajusta el tamaño de la imagen
+                    )
                 }
             }
         }
@@ -100,7 +116,8 @@ fun WebViewContainer(
 ) {
     val context = LocalContext.current
     var loginAttempted by remember { mutableStateOf(false) } // Control para evitar reintentos
-    var isMonitoringUser by remember { mutableStateOf(false) } // Control para evitar múltiples revisiones
+    var isMonitoringError by remember { mutableStateOf(false) } // Control para evitar múltiples revisiones
+    var isMonitoringUser by remember { mutableStateOf(false) } // Control para evitar múltiples revisiones del usuario
 
     AndroidView(
         factory = {
@@ -154,6 +171,12 @@ fun WebViewContainer(
                             isMonitoringUser = true
                             monitorUser(view, onUserDetected)
                         }
+
+                        // Iniciar monitoreo periódico para detectar el mensaje de error
+                        if (!isMonitoringError) {
+                            isMonitoringError = true
+                            monitorError(view, onLoginError)
+                        }
                     }
                 }
                 loadUrl(url)
@@ -170,7 +193,7 @@ fun WebViewContainer(
  */
 fun monitorUser(view: WebView?, onUserDetected: (Boolean) -> Unit) {
     view?.postDelayed({
-        view.evaluateJavascript("""
+        view.evaluateJavascript(""" 
             (function() {
                 var userElement = document.querySelector('#dUsuarioHeader');
                 return userElement ? 'found' : 'not_found';
@@ -182,6 +205,27 @@ fun monitorUser(view: WebView?, onUserDetected: (Boolean) -> Unit) {
                 onUserDetected(false) // Usuario no detectado, ocultar botones
                 // Continuar monitoreando si no se encuentra al usuario
                 monitorUser(view, onUserDetected)
+            }
+        }
+    }, 1000) // Reintentar cada segundo
+}
+
+/**
+ * Monitorea periódicamente el DOM para detectar el mensaje de error.
+ */
+fun monitorError(view: WebView?, onLoginError: (Boolean) -> Unit) {
+    view?.postDelayed({
+        view.evaluateJavascript(""" 
+            (function() {
+                var errorElement = document.querySelector('#LoginForm_password_em_');
+                return errorElement ? 'error' : 'success';
+            })();
+        """) { result ->
+            if (result.contains("error")) {
+                onLoginError(true) // Activar el error
+            } else {
+                // Si no se detectó el error, continuar monitoreando
+                monitorError(view, onLoginError)
             }
         }
     }, 1000) // Reintentar cada segundo
